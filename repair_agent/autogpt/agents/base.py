@@ -19,6 +19,7 @@ from autogpt.memory.message_history import MessageHistory
 from autogpt.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
 from autogpt.json_utils.utilities import extract_dict_from_response
 from autogpt.commands.defects4j_static import get_info, run_tests, query_for_fix, query_for_commands, extract_command, execute_command, create_fix_template
+from autogpt.debugger.debugger_client import AgentDebugger
 
 CommandName = str
 CommandArgs = dict[str, str]
@@ -912,6 +913,7 @@ please use the indicated format and produce a list, like this:
 
     def think(
         self,
+        debugger: AgentDebugger = None,
         instruction: Optional[str] = None,
         thought_process_id: ThoughtProcessID = "one-shot",
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
@@ -949,6 +951,9 @@ please use the indicated format and produce a list, like this:
                 suggested_fixes = query_for_fix(query, )
                 self.save_to_json(os.path.join("experimental_setups", exps[-1], "external_fixes", "external_fixes_{}_{}.json".format(project_name, bug_index)), json.loads(suggested_fixes))
 
+        if debugger:
+            debugger.begin_llm_query_breakpoint(str(prompt.messages))
+
         raw_response = create_chat_completion(
             prompt,
             self.config,
@@ -983,8 +988,11 @@ please use the indicated format and produce a list, like this:
                     raw_response = new_response
             self.cycle_count += 1
 
-            return self.on_response(raw_response, thought_process_id, prompt, instruction)
         except SyntaxError as e:
+            pass
+        finally:
+            if debugger:
+                debugger.end_llm_query_breakpoint(str(raw_response))
             return self.on_response(raw_response, thought_process_id, prompt, instruction)
         
     @abstractmethod
@@ -993,6 +1001,7 @@ please use the indicated format and produce a list, like this:
         command_name: str | None,
         command_args: dict[str, str] | None,
         user_input: str | None,
+        debugger: AgentDebugger = None
     ) -> str:
         """Executes the given command, if any, and returns the agent's response.
 

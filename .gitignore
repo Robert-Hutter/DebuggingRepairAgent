@@ -159,6 +159,12 @@ cython_debug/
 #.idea/
 token.txt
 
+debugger
+logs
+auto_gpt_workspace
+.env
+.vscode
+
 repair_agent/auto_gpt_workspace/
 repair_agent/experimental_setups/
 repair_agent/logs/

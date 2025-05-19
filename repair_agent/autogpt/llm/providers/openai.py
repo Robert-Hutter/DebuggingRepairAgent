@@ -82,6 +82,14 @@ OPEN_AI_CHAT_MODELS = {
             max_tokens=16384,
             supports_functions=True,
         ),
+        ChatModelInfo(
+            name="gpt-4o-mini",
+            prompt_token_cost=0.00000015,
+            completion_token_cost=0.0000006,
+            max_tokens=16384,
+        )
+
+        ),
     ]
 }
 

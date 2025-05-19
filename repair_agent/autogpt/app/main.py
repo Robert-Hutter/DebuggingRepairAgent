@@ -33,6 +33,8 @@ from autogpt.speech import say_text
 from autogpt.workspace import Workspace
 from scripts.install_plugin_deps import install_plugin_dependencies
 
+from autogpt.debugger.debugger_client import AgentDebugger
+
 
 def run_auto_gpt(
     continuous: bool,
@@ -220,6 +222,8 @@ def run_interaction_loop(
         config.continuous_mode, config.continuous_limit
     )
     spinner = Spinner("Thinking...", plain_output=config.plain_output)
+    
+    debugger = AgentDebugger('RepairAgent', 'localhost', 8765, 'defects4j')
 
     def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
         nonlocal cycle_budget, cycles_remaining, spinner
@@ -229,6 +233,8 @@ def run_interaction_loop(
                 "immediately.",
                 Fore.RED,
             )
+            if debugger:
+                debugger.stop()
             sys.exit()
         else:
             restart_spinner = spinner.running
@@ -258,7 +264,7 @@ def run_interaction_loop(
         ########
         # Have the agent determine the next action to take.
         with spinner:
-            command_name, command_args, assistant_reply_dict = agent.think()
+            command_name, command_args, assistant_reply_dict = agent.think(debugger)
 
         ###############
         # Update User #
@@ -321,7 +327,7 @@ def run_interaction_loop(
         # and then having the decrement set it to 0, exiting the application.
         if command_name != "human_feedback":
             cycles_remaining -= 1
-        result = agent.execute(command_name, command_args, user_input)
+        result = agent.execute(command_name, command_args, user_input, debugger)
 
         if result is not None:
             logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)

@@ -21,8 +21,8 @@ AZURE_CONFIG_FILE = "azure.yaml"
 PLUGINS_CONFIG_FILE = "plugins_config.yaml"
 PROMPT_SETTINGS_FILE = "prompt_settings.yaml"
 
-GPT_4_MODEL = "gpt-4"
-GPT_3_MODEL = "gpt-3.5-turbo-0125"
+GPT_4_MODEL = "gpt-4o-mini"
+GPT_3_MODEL = "gpt-4o-mini"
 
 
 class Config(SystemSettings, arbitrary_types_allowed=True):

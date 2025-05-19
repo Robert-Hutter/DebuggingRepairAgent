@@ -81,5 +81,8 @@ def count_string_tokens(string: str, model_name: str) -> int:
     Returns:
         int: The number of tokens in the text string.
     """
-    encoding = tiktoken.encoding_for_model(model_name)
+    if model_name == 'gpt-4o-mini':
+        encoding = tiktoken.encoding_for_model('gpt-4')
+    else:
+        encoding = tiktoken.encoding_for_model(model_name)
     return len(encoding.encode(string))

@@ -29,6 +29,7 @@ from autogpt.commands.defects4j_static import query_for_mutants, construct_fix_c
 
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
+from autogpt.debugger.debugger_client import AgentDebugger
 
 class Agent(BaseAgent):
     """Agent class for interacting with Auto-GPT."""
@@ -124,7 +125,11 @@ class Agent(BaseAgent):
         command_name: str | None,
         command_args: dict[str, str] | None,
         user_input: str | None,
+        debugger: AgentDebugger = None
     ) -> str:
+        if debugger:
+            debugger.begin_tool_invocation_breakpoint(command_name, command_args)
+        
         # Execute command
         if command_name is not None and command_name.lower().startswith("error"):
             result = f"Could not execute command: {command_name}{command_args}"
@@ -170,6 +175,8 @@ class Agent(BaseAgent):
         else:
             self.history.add("user", result, "action_result")
 
+        if debugger:
+            debugger.end_tool_invocation_breakpoint(result)
         return result
 
 
