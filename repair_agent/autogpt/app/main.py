@@ -223,116 +223,120 @@ def run_interaction_loop(
     )
     spinner = Spinner("Thinking...", plain_output=config.plain_output)
     
-    debugger = AgentDebugger('RepairAgent', 'localhost', 8765, 'defects4j')
-
-    def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
-        nonlocal cycle_budget, cycles_remaining, spinner
-        if cycles_remaining in [0, 1, math.inf]:
-            logger.typewriter_log(
-                "Interrupt signal received. Stopping continuous command execution "
-                "immediately.",
-                Fore.RED,
-            )
-            if debugger:
-                debugger.stop()
-            sys.exit()
-        else:
-            restart_spinner = spinner.running
-            if spinner.running:
-                spinner.stop()
-
-            logger.typewriter_log(
-                "Interrupt signal received. Stopping continuous command execution.",
-                Fore.RED,
-            )
-            cycles_remaining = 1
-            if restart_spinner:
-                spinner.start()
-
-    # Set up an interrupt signal for the agent.
-    signal.signal(signal.SIGINT, graceful_agent_interrupt)
-
-    #########################
-    # Application Main Loop #
-    #########################
-
-    while cycles_remaining > 0:
-        logger.debug(f"Cycle budget: {cycle_budget}; remaining: {cycles_remaining}")
-
-        ########
-        # Plan #
-        ########
-        # Have the agent determine the next action to take.
-        with spinner:
-            command_name, command_args, assistant_reply_dict = agent.think(debugger)
-
-        ###############
-        # Update User #
-        ###############
-        # Print the assistant's thoughts and the next command to the user.
-        update_user(config, ai_config, command_name, command_args, assistant_reply_dict)
-
-        ##################
-        # Get user input #
-        ##################
-        if cycles_remaining == 1:  # Last cycle
-            user_feedback, user_input, new_cycles_remaining = get_user_feedback(
-                config,
-                ai_config,
-            )
-
-            if user_feedback == UserFeedback.AUTHORIZE:
-                if new_cycles_remaining is not None:
-                    # Case 1: User is altering the cycle budget.
-                    if cycle_budget > 1:
-                        cycle_budget = new_cycles_remaining + 1
-                    # Case 2: User is running iteratively and
-                    #   has initiated a one-time continuous cycle
-                    cycles_remaining = new_cycles_remaining + 1
-                else:
-                    # Case 1: Continuous iteration was interrupted -> resume
-                    if cycle_budget > 1:
-                        logger.typewriter_log(
-                            "RESUMING CONTINUOUS EXECUTION: ",
-                            Fore.MAGENTA,
-                            f"The cycle budget is {cycle_budget}.",
-                        )
-                    # Case 2: The agent used up its cycle budget -> reset
-                    cycles_remaining = cycle_budget + 1
+    debugger: AgentDebugger
+    with AgentDebugger('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/csv_1_buggy') as debugger:
+        agent.debugger = debugger
+        
+        def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
+            nonlocal cycle_budget, cycles_remaining, spinner
+            if cycles_remaining in [0, 1, math.inf]:
                 logger.typewriter_log(
-                    "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-=",
-                    Fore.MAGENTA,
-                    "",
+                    "Interrupt signal received. Stopping continuous command execution "
+                    "immediately.",
+                    Fore.RED,
                 )
-            elif user_feedback == UserFeedback.EXIT:
-                logger.typewriter_log("Exiting...", Fore.YELLOW)
-                exit()
-            else:  # user_feedback == UserFeedback.TEXT
-                command_name = "human_feedback"
-        else:
-            user_input = None
-            # First log new-line so user can differentiate sections better in console
-            logger.typewriter_log("\n")
-            if cycles_remaining != math.inf:
-                # Print authorized commands left value
+                sys.exit()
+            else:
+                restart_spinner = spinner.running
+                if spinner.running:
+                    spinner.stop()
+
                 logger.typewriter_log(
-                    "AUTHORISED COMMANDS LEFT: ", Fore.CYAN, f"{cycles_remaining}"
+                    "Interrupt signal received. Stopping continuous command execution.",
+                    Fore.RED,
+                )
+                cycles_remaining = 1
+                if restart_spinner:
+                    spinner.start()
+
+        # Set up an interrupt signal for the agent.
+        signal.signal(signal.SIGINT, graceful_agent_interrupt)
+
+        #########################
+        # Application Main Loop #
+        #########################
+
+        while cycles_remaining > 0:
+            logger.debug(f"Cycle budget: {cycle_budget}; remaining: {cycles_remaining}")
+
+            ########
+            # Plan #
+            ########
+            # Have the agent determine the next action to take.
+            with spinner:
+                command_name, command_args, assistant_reply_dict = agent.think()
+
+            ###############
+            # Update User #
+            ###############
+            # Print the assistant's thoughts and the next command to the user.
+            update_user(config, ai_config, command_name, command_args, assistant_reply_dict)
+
+            ##################
+            # Get user input #
+            ##################
+            if cycles_remaining == 1:  # Last cycle
+                user_feedback, user_input, new_cycles_remaining = get_user_feedback(
+                    config,
+                    ai_config,
                 )
 
-        ###################
-        # Execute Command #
-        ###################
-        # Decrement the cycle counter first to reduce the likelihood of a SIGINT
-        # happening during command execution, setting the cycles remaining to 1,
-        # and then having the decrement set it to 0, exiting the application.
-        if command_name != "human_feedback":
-            cycles_remaining -= 1
-        result = agent.execute(command_name, command_args, user_input, debugger)
+                if user_feedback == UserFeedback.AUTHORIZE:
+                    if new_cycles_remaining is not None:
+                        # Case 1: User is altering the cycle budget.
+                        if cycle_budget > 1:
+                            cycle_budget = new_cycles_remaining + 1
+                        # Case 2: User is running iteratively and
+                        #   has initiated a one-time continuous cycle
+                        cycles_remaining = new_cycles_remaining + 1
+                    else:
+                        # Case 1: Continuous iteration was interrupted -> resume
+                        if cycle_budget > 1:
+                            logger.typewriter_log(
+                                "RESUMING CONTINUOUS EXECUTION: ",
+                                Fore.MAGENTA,
+                                f"The cycle budget is {cycle_budget}.",
+                            )
+                        # Case 2: The agent used up its cycle budget -> reset
+                        cycles_remaining = cycle_budget + 1
+                    logger.typewriter_log(
+                        "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-=",
+                        Fore.MAGENTA,
+                        "",
+                    )
+                elif user_feedback == UserFeedback.EXIT:
+                    logger.typewriter_log("Exiting...", Fore.YELLOW)
+                    exit()
+                else:  # user_feedback == UserFeedback.TEXT
+                    command_name = "human_feedback"
+            else:
+                user_input = None
+                # First log new-line so user can differentiate sections better in console
+                logger.typewriter_log("\n")
+                if cycles_remaining != math.inf:
+                    # Print authorized commands left value
+                    logger.typewriter_log(
+                        "AUTHORISED COMMANDS LEFT: ", Fore.CYAN, f"{cycles_remaining}"
+                    )
 
-        if result is not None:
-            logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)
-        else:
-            logger.typewriter_log("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
+            ###################
+            # Execute Command #
+            ###################
+            # Decrement the cycle counter first to reduce the likelihood of a SIGINT
+            # happening during command execution, setting the cycles remaining to 1,
+            # and then having the decrement set it to 0, exiting the application.
+            if command_name != "human_feedback":
+                cycles_remaining -= 1
+                
+            debugger.begin_tool_invocation_breakpoint(command_name, command_args)
+            result = agent.execute(command_name, command_args, user_input)
+            debugger.end_tool_invocation_breakpoint(result)
+            debugger.commit_agent_changes(commit_summary='Reset workspace to undo all agent changes.')
+
+            if result is not None:
+                logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)
+            else:
+                logger.typewriter_log("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
 
 
 def update_user(

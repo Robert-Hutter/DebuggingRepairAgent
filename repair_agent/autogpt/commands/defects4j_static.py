@@ -153,7 +153,7 @@ def run_checkout(name: str, index:int, workspace):
         str: The output of the checkout command
     """
     logger.info(
-        f"Restoring project '{name}', bug number {index}, in working directory '{workspace}'"
+        f"defects4j_static.py: Restoring project '{name}', bug number {index}, in working directory '{workspace}'"
     )
 
     if we_are_running_in_a_docker_container():
