@@ -88,8 +88,6 @@ OPEN_AI_CHAT_MODELS = {
             completion_token_cost=0.0000006,
             max_tokens=16384,
         )
-
-        ),
     ]
 }
 
