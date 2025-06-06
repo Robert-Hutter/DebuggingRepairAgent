@@ -224,7 +224,7 @@ def run_interaction_loop(
     spinner = Spinner("Thinking...", plain_output=config.plain_output)
     
     debugger: AgentDebugger
-    with AgentDebugger('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/csv_1_buggy') as debugger:
+    with AgentDebugger('RepairAgent', 'debugger-server', 8765, 'auto_gpt_workspace/csv_1_buggy') as debugger:
         agent.debugger = debugger
         
         def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
