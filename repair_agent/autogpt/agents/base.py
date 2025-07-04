@@ -951,7 +951,7 @@ please use the indicated format and produce a list, like this:
                 self.save_to_json(os.path.join("experimental_setups", exps[-1], "external_fixes", "external_fixes_{}_{}.json".format(project_name, bug_index)), json.loads(suggested_fixes))
 
         if self.debugger:
-            self.debugger.begin_llm_query_breakpoint(str(prompt.messages))
+            self.debugger.begin_llm_query_breakpoint({'MessageSequence': prompt.raw()})
 
         raw_response = create_chat_completion(
             prompt,
@@ -991,7 +991,7 @@ please use the indicated format and produce a list, like this:
             pass
         finally:
             if self.debugger:
-                self.debugger.end_llm_query_breakpoint(str(raw_response))
+                self.debugger.end_llm_query_breakpoint(extract_dict_from_response(raw_response.content))
             return self.on_response(raw_response, thought_process_id, prompt, instruction)
         
     @abstractmethod
