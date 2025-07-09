@@ -27,10 +27,17 @@ def main():
         (".env", "GLOBAL-API-KEY-PLACEHOLDER"),
     ]
 
-    print("Please provide your OpenAI API-KEY.")
-    replacement_value = input("OpenAI API-KEY: ").strip()
+    # Check if OPENAI_API_KEY environment variable is set
+    replacement_value = os.getenv("OPENAI_API_KEY")
+    if not replacement_value:
+        print("Please provide your OpenAI API-KEY.")
+        replacement_value = input("OpenAI API-KEY: ").strip()
+        if not replacement_value:
+            print("Error: API key cannot be empty")
+            exit(1)
 
     # Save the replacement value to token.txt
+    print('Setting LLM API key...')
     with open("token.txt", "w") as token_file:
         token_file.write(replacement_value)
 

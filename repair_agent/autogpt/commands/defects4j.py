@@ -101,6 +101,8 @@ def create_deletion_template(project_name, bug_number):
 
 
 def run_checkout(project_name: str, bug_index:int, agent: Agent):
+    if agent.debugger:
+        agent.debugger.commit_agent_changes()
     cmd_temp = "defects4j checkout -p {} -v {}b -w {}"
     folder_name = "_".join([project_name.lower(), str(bug_index), "buggy"])
     if os.path.exists(os.path.join("auto_gpt_workspace", folder_name)):
@@ -117,7 +119,7 @@ def run_checkout(project_name: str, bug_index:int, agent: Agent):
         str: The output of the checkout command
     """
     logger.info(
-        f"Restoring project '{project_name}', bug number {bug_index}, in working directory '{agent.config.workspace_path}'"
+        f"defects4j.py: Restoring project '{project_name}', bug number {bug_index}, in working directory '{agent.config.workspace_path}'"
     )
 
     if we_are_running_in_a_docker_container():
