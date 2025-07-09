@@ -101,8 +101,6 @@ def create_deletion_template(project_name, bug_number):
 
 
 def run_checkout(project_name: str, bug_index:int, agent: Agent):
-    if agent.debugger:
-        agent.debugger.commit_agent_changes()
     cmd_temp = "defects4j checkout -p {} -v {}b -w {}"
     folder_name = "_".join([project_name.lower(), str(bug_index), "buggy"])
     if os.path.exists(os.path.join("auto_gpt_workspace", folder_name)):
@@ -133,6 +131,10 @@ def run_checkout(project_name: str, bug_index:int, agent: Agent):
             cwd=agent.config.workspace_path,
             shell=True
         )
+        
+        if agent.debugger:
+            agent.debugger.commit_agent_changes(commit_summary='Reverted agent changes.')
+            
         if result.returncode == 0:
             return "The changed files were restored to their original content"
         else:
@@ -714,6 +716,11 @@ def execute_write_range(project_name, bug_index, changes_dicts, agent):
         change_dict["file_name"] = os.path.join(project_dir,filepath)
     
         apply_changes(change_dict)
+    
+    if agent.debugger:
+        agent.debugger.post_debug_message('Commit agent changes...')
+        if not agent.debugger.commit_agent_changes():
+            agent.debugger.post_debug_message('Nothing to commit...')
 
     run_ret = run_defects4j_tests(project_name, bug_index, agent)
     return "Lines written successfully, the result of running test cases on the modified code is the following:\n" + run_ret
@@ -1596,8 +1603,9 @@ def apply_changes(change_dict):
         modified_line = modification.get("modified_line", "")
         if 1 <= int(line_number) <= len(lines):
             orig_line = lines[int(line_number) - 1]
-            if fuzz.ratio(orig_line, modified_line) < 70:
-                continue
+            #if fuzz.ratio(orig_line, modified_line) < 70:
+            #    continue
+            logger.info(f'Change line {line_number} in {file_name}: "{orig_line}" to "{modified_line}"')
             if modified_line.endswith("\n"):
                 lines[int(line_number) - 1] = modified_line
             else:
