@@ -30,6 +30,7 @@ class BaseAgent(metaclass=ABCMeta):
     """Base class for all Auto-GPT agents."""
 
     ThoughtProcessID = Literal["one-shot"]
+    debugger: AgentDebugger
 
     def __init__(
         self,
@@ -946,9 +947,13 @@ please use the indicated format and produce a list, like this:
                 query = self.construct_fix_query()
                 suggested_fixes = query_for_fix(query, )
                 self.save_to_json(os.path.join("experimental_setups", exps[-1], "external_fixes", "external_fixes_{}_{}.json".format(project_name, bug_index)), json.loads(suggested_fixes))
-
+            
         if self.debugger:
-            self.debugger.begin_llm_query_breakpoint({'MessageSequence': prompt.raw()})
+            modifiedMessages = self.debugger.begin_llm_query_breakpoint({'MessageSequence': prompt.raw()})
+            try:
+                prompt.setFromDictList(modifiedMessages['MessageSequence'])
+            except e:
+                pass # Don't apply changes if there's a problem with parsing them.
 
         raw_response = create_chat_completion(
             prompt,
@@ -988,7 +993,7 @@ please use the indicated format and produce a list, like this:
             pass
         finally:
             if self.debugger:
-                self.debugger.end_llm_query_breakpoint(extract_dict_from_response(raw_response.content))
+                raw_response.content = self.debugger.end_llm_query_breakpoint(raw_response.content)
             return self.on_response(raw_response, thought_process_id, prompt, instruction)
         
     @abstractmethod

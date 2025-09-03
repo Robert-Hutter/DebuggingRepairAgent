@@ -328,10 +328,10 @@ def run_interaction_loop(
             if command_name != "human_feedback":
                 cycles_remaining -= 1
                 
-            debugger.begin_tool_invocation_breakpoint(command_name, command_args)
+            if command_name: (command_name, command_args) = debugger.begin_tool_invocation_breakpoint(command_name, command_args)
             result = agent.execute(command_name, command_args, user_input)
-            debugger.end_tool_invocation_breakpoint(result)
-
+            if command_name: result = debugger.end_tool_invocation_breakpoint(result)
+            
             if result is not None:
                 logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)
             else:
