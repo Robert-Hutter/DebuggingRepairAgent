@@ -134,6 +134,10 @@ def run_checkout(project_name: str, bug_index:int, agent: Agent):
             cwd=agent.config.workspace_path,
             shell=True
         )
+        
+        if agent.debugger:
+            agent.debugger.commit_agent_changes(commit_summary='Reverted agent changes.')
+            
         if result.returncode == 0:
             return "The changed files were restored to their original content"
         else:
@@ -715,6 +719,11 @@ def execute_write_range(project_name, bug_index, changes_dicts, agent):
         change_dict["file_name"] = os.path.join(project_dir,filepath)
     
         apply_changes(change_dict)
+    
+    if agent.debugger:
+        agent.debugger.post_debug_message('Commit agent changes...')
+        if not agent.debugger.commit_agent_changes():
+            agent.debugger.post_debug_message('Nothing to commit...')
 
     run_ret = run_defects4j_tests(project_name, bug_index, agent)
     return "Lines written successfully, the result of running test cases on the modified code is the following:\n" + run_ret
@@ -758,7 +767,7 @@ def extract_lines_range(name, index):
 @command(
     "get_classes_and_methods",
     "This function allows you to get all classes and methods names within a file.\
-    It returns a dictinary where keys are classes names and values are list of methods names\
+    It returns a dictionary where keys are classes names and values are list of methods names\
     The file path should start from source or src directory depending on the project, you whould know which one is it after you execute get_info command",
     {
         "project_name": {
@@ -781,7 +790,7 @@ def extract_lines_range(name, index):
 )
 def get_classes_and_methods(project_name: str, bug_index: str, file_path: str, agent: Agent):
     """This function allows you to get all classes and methods names within a file. 
-    It returns a dictinary where keys are classes names and values are list of methods names"""
+    It returns a dictionary where keys are classes names and values are list of methods names"""
     
     workspace = agent.config.workspace_path
     project_dir="{}_{}_buggy".format(project_name.lower(), bug_index)
@@ -1597,8 +1606,9 @@ def apply_changes(change_dict):
         modified_line = modification.get("modified_line", "")
         if 1 <= int(line_number) <= len(lines):
             orig_line = lines[int(line_number) - 1]
-            if fuzz.ratio(orig_line, modified_line) < 70:
-                continue
+            #if fuzz.ratio(orig_line, modified_line) < 70:
+            #    continue
+            logger.info(f'Change line {line_number} in {file_name}: "{orig_line}" to "{modified_line}"')
             if modified_line.endswith("\n"):
                 lines[int(line_number) - 1] = modified_line
             else:

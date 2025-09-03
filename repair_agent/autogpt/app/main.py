@@ -224,9 +224,9 @@ def run_interaction_loop(
     spinner = Spinner("Thinking...", plain_output=config.plain_output)
     
     debugger: AgentDebugger
-    with AgentDebugger('RepairAgent', 'debugger-server', 8765, 'auto_gpt_workspace/csv_1_buggy') as debugger:
+    with AgentDebugger('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/compress_16_buggy') as debugger:
         agent.debugger = debugger
-        
+
         def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
             nonlocal cycle_budget, cycles_remaining, spinner
             if cycles_remaining in [0, 1, math.inf]:
@@ -328,11 +328,10 @@ def run_interaction_loop(
             if command_name != "human_feedback":
                 cycles_remaining -= 1
                 
-            debugger.begin_tool_invocation_breakpoint(command_name, command_args)
+            if command_name: (command_name, command_args) = debugger.begin_tool_invocation_breakpoint(command_name, command_args)
             result = agent.execute(command_name, command_args, user_input)
-            debugger.end_tool_invocation_breakpoint(result)
-            debugger.commit_agent_changes(commit_summary='Reset workspace to undo all agent changes.')
-
+            if command_name: result = debugger.end_tool_invocation_breakpoint(result)
+            
             if result is not None:
                 logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)
             else:
@@ -473,8 +472,8 @@ def construct_main_ai_config(
         or config.skip_reprompt
         and all([ai_config.ai_name, ai_config.ai_role, ai_config.ai_goals])
     ):
-        logger.typewriter_log("Name :", Fore.GREEN, ai_config.ai_name)
-        logger.typewriter_log("Role :", Fore.GREEN, ai_config.ai_role)
+        logger.typewriter_log("Name:", Fore.GREEN, ai_config.ai_name)
+        logger.typewriter_log("Role:", Fore.GREEN, ai_config.ai_role)
         logger.typewriter_log("Goals:", Fore.GREEN, f"{ai_config.ai_goals}")
         logger.typewriter_log(
             "API Budget:",
@@ -506,7 +505,7 @@ Continue ({config.authorise_key}/{config.exit_key}): """,
 
     if config.restrict_to_workspace:
         logger.typewriter_log(
-            "NOTE:All files/directories created by this agent can be found inside its workspace at:",
+            "NOTE: All files/directories created by this agent can be found inside its workspace at:",
             Fore.YELLOW,
             f"{config.workspace_path}",
         )

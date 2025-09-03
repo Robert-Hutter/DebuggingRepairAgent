@@ -7,7 +7,7 @@ RUN apt-get update && \
     pip3 install --upgrade pip
 
 # Install additional dependencies
-RUN apt-get update && apt-get install -y openjdk-11-jdk dos2unix cpanminus libdbi-perl git
+RUN apt-get update && apt-get install -y openjdk-11-jdk subversion dos2unix cpanminus libdbi-perl git
 
 # Set up defects4j
 WORKDIR /repair_agent
@@ -18,6 +18,7 @@ RUN rm -rf defects4j && \
     cp -r ../data/buggy-lines defects4j && \
     cp -r ../data/buggy-methods defects4j && \
     cd defects4j && \
+    cpanm --installdeps . \
     ./init.sh
 
 # Set the API key and start the experiment
