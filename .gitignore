@@ -177,3 +177,4 @@ logs
 auto_gpt_workspace
 .env
 .vscode
+traces
