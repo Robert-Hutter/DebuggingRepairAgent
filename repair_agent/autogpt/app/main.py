@@ -33,7 +33,7 @@ from autogpt.speech import say_text
 from autogpt.workspace import Workspace
 from scripts.install_plugin_deps import install_plugin_dependencies
 
-from autogpt.debugger.debugger_client import AgentDebugger
+from agentstepper.api.debugger import AgentStepper
 
 
 def run_auto_gpt(
@@ -223,8 +223,8 @@ def run_interaction_loop(
     )
     spinner = Spinner("Thinking...", plain_output=config.plain_output)
     
-    debugger: AgentDebugger
-    with AgentDebugger('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/compress_16_buggy') as debugger:
+    debugger: AgentStepper
+    with AgentStepper('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/compress_16_buggy') as debugger:
         agent.debugger = debugger
 
         def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:

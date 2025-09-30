@@ -29,7 +29,7 @@ from autogpt.commands.defects4j_static import query_for_mutants, construct_fix_c
 
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
-from autogpt.debugger.debugger_client import AgentDebugger
+from agentstepper.api.debugger import AgentStepper
 
 class Agent(BaseAgent):
     """Agent class for interacting with Auto-GPT."""
