@@ -2,6 +2,40 @@
 
 RepairAgent is an autonomous LLM-based agent designed for automated program repair. For a comprehensive understanding of its workings and development, you can check out our [research paper here](https://arxiv.org/abs/2403.17134).
 
+## ⚠️ Important Information Regarding AgentStepper Integration
+
+In the current state of this repository, **AgentStepper** is fully integrated into **RepairAgent**.  
+This means that **AgentStepper will automatically become active when running the agent**.  
+
+To ensure correct operation, follow the setup steps below.  
+
+### 1. Start the AgentStepper Core
+
+Before running SWE-Agent, first start the **AgentStepper Core** service.  
+Then, configure the API integration inside `repair_agent/autogpt/app/main.py:227`:
+```python
+with AgentStepper('RepairAgent', 'localhost', 8765, 'auto_gpt_workspace/compress_16_buggy') as debugger:
+````
+
+Adjust the parameters to match your environment:
+* **Core host** (e.g., `localhost`)
+* **Port** (e.g., `8765`)
+* **Agent workspace** (e.g., `auto_gpt_workspace/compress_16_buggy`)
+
+Contact the developer of the agent for more information on which repository path to specify for which issue.
+
+### 2. Install the AgentStepper API Package
+
+Make sure the **`agentstepper-api`** Python package is installed in the same environment where RepairAgent is executed.
+
+### 3. Configure OpenAI API Access
+
+Set your **OpenAI API key** as an environment variable in your terminal:
+
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+```
+
 ---
 
 ## 🚨✨ **UPDATE – June 2025** ✨🚨
