@@ -952,7 +952,7 @@ please use the indicated format and produce a list, like this:
             modifiedMessages = self.debugger.begin_llm_query_breakpoint({'MessageSequence': prompt.raw()})
             try:
                 prompt.setFromDictList(modifiedMessages['MessageSequence'])
-            except e:
+            except Exception:
                 pass # Don't apply changes if there's a problem with parsing them.
 
         raw_response = create_chat_completion(
